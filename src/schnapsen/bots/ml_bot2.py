@@ -6,6 +6,118 @@ from sklearn.linear_model import LogisticRegression
 import joblib
 import time
 import pathlib
+import math
+import numpy as np
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
+from typing import Callable, List, Union, Optional
+import scipy.special
+
+# list of the activation function to use
+def tanh(x):
+    return np.tanh(x)
+def softsign(x):
+    return x / (1 + abs(x))
+def arctan(x):
+    return math.atan(x)
+def inverse_sqrt(x):
+    return 1 / math.sqrt(x)
+def silu(x):
+    return x * (1 / (1 + np.exp(-x)))
+def saturated_ramp(x):
+    return np.minimum(np.maximum(-1, x), 1)
+def relu(x):
+    return np.maximum(0, x)
+def power_relu_2(x):
+    return np.maximum(0, x) ** 2
+def tanh_exp_decay(x):
+    return np.tanh(x) * np.exp(-0.1 * np.abs(x))
+def elu(x):
+    return np.maximum(np.exp(x) - 1, x)
+import numpy as np
+
+
+act = tanh_exp_decay #set the current activation function.
+
+class CustomMLPClassifier(MLPClassifier):
+    """
+    Extension of MLPClassifier that allows custom activation functions
+    while maintaining performance by leveraging the existing optimized implementation.
+    """
+    
+    def __init__(
+        self,
+        hidden_layer_sizes=(100,),
+        activation_function=None,
+        learning_rate_init=0.0001,
+        max_iter=200,
+        batch_size='auto',
+        solver='adam',
+        alpha=0.0001,
+        random_state=None,
+        tol=1e-4,
+        learning_rate='constant',
+        verbose=False,
+        warm_start=False,
+        momentum=0.9,
+        nesterovs_momentum=True,
+        early_stopping=False,
+        validation_fraction=0.1,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-8,
+        n_iter_no_change=10,
+        max_fun=15000,
+        shuffle=True,
+        power_t=0.5
+    ):
+        # Initialize parent with 'identity' activation to bypass activation in parent class
+        super().__init__(
+            hidden_layer_sizes=hidden_layer_sizes,
+            activation='identity',  # Use identity so we can apply our custom activation
+            solver=solver,
+            alpha=alpha,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            learning_rate_init=learning_rate_init,
+            max_iter=max_iter,
+            random_state=random_state,
+            tol=tol,
+            verbose=verbose,
+            warm_start=warm_start,
+            momentum=momentum,
+            nesterovs_momentum=nesterovs_momentum,
+            early_stopping=early_stopping,
+            validation_fraction=validation_fraction,
+            beta_1=beta_1,
+            beta_2=beta_2,
+            epsilon=epsilon,
+            n_iter_no_change=n_iter_no_change,
+            max_fun=max_fun,
+            shuffle=shuffle,
+            power_t=power_t
+        )
+        self.activation_function = activation_function
+        
+    def _forward_pass_fast(self, activations, check_input=True):
+        """
+        Custom forward pass that applies our activation function
+
+        -------------
+
+        check_input : bool, default=True
+            Whether to check input arrays
+        """
+        hidden_activations = super()._forward_pass_fast(activations, check_input = check_input)
+        
+        # Apply our custom activation to the hidden layers
+        if self.activation_function is not None:
+            # Only apply to hidden layers, not output layer
+            for i in range(len(hidden_activations) - 1):
+                hidden_activations[i] = self.activation_function(hidden_activations[i])
+        
+        return hidden_activations
 
 
 class MLPlayingBot(Bot):
@@ -136,14 +248,14 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
     The model classes used in this implemntation are not necesarily optimal.
 
     :param replay_memory_location: Location of the games stored by MLDataBot, default pathlib.Path('ML_replay_memories') / 'test_replay_memory'
-    :param model_location: Location where the model will be stored, default pathlib.Path("ML_models") / 'test_model'
+    :param model_location: Location where the model will be stored, default pathlib.Path("ML_models2") / 'test_model'
     :param model_class: The machine learning model class to be used, either 'NN' for a neural network, or 'LR' for a linear regression.
     :param overwrite: Whether to overwrite a possibly existing model.
     """
     if replay_memory_location is None:
         replay_memory_location = pathlib.Path('ML_replay_memories') / 'test_replay_memory'
     if model_location is None:
-        model_location = pathlib.Path("ML_models") / 'test_model'
+        model_location = pathlib.Path("ML_models2") / 'test_model'
     assert model_class == 'NN' or model_class == 'LR', "Unknown model class"
 
     # check that the replay memory dataset is found at the specified location
@@ -189,9 +301,9 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
         # needs a bigger dataset, but if you find the correct combination of neurons and neural layers and provide a big enough training dataset can lead to better performance
 
         # one layer of 30 neurons
-        hidden_layer_sizes = (30)
+        #hidden_layer_sizes = (30)
         # two layers of 30 and 5 neurons respectively
-        # hidden_layer_sizes = (30, 5)
+        hidden_layer_sizes = (30, 5)
 
         # The learning rate determines how fast we move towards the optimal solution.
         # A low learning rate will converge slowly, but a large one might overshoot.
@@ -203,7 +315,16 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
         # Train a neural network
         learner = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, learning_rate_init=learning_rate,
                                 alpha=regularization_strength, verbose=True, early_stopping=True, n_iter_no_change=6,
-                                activation='logistic')
+                                activation='tanh')
+        clf = CustomMLPClassifier(hidden_layer_sizes=(30, 5),
+                                  activation_function=act,
+                                  learning_rate='constant',
+                                  learning_rate_init=0.0001,
+                                  max_iter=1000,
+                                  batch_size=32,
+                                  early_stopping=True,
+                                  n_iter_no_change=6
+)
     elif model_class == 'LR':
         # Train a simpler Linear Logistic Regression model
         # learn more about the model or how to use better use it by checking out its documentation
@@ -218,7 +339,7 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
     start = time.time()
     print("Starting training phase...")
 
-    model = learner.fit(data, targets)
+    model = clf.fit(data, targets)
     # Save the model in a file
     joblib.dump(model, model_location)
     end = time.time()

@@ -1,12 +1,12 @@
 import random
-import pathlib
-
+import pathlib, math
+import numpy as np
 from typing import Optional
 
 import click
 from schnapsen.alternative_engines.ace_one_engine import AceOneGamePlayEngine
 
-from schnapsen.bots import MLDataBot, train_ML_model, MLPlayingBot, RandBot
+from schnapsen.bots import MLDataBot, train_ML_model, MLPlayingBot, RandBot, BullyBot
 
 from schnapsen.bots.example_bot import ExampleBot
 
@@ -15,6 +15,8 @@ from schnapsen.game import (Bot, GamePlayEngine, Move, PlayerPerspective,
 from schnapsen.alternative_engines.twenty_four_card_schnapsen import TwentyFourSchnapsenGamePlayEngine
 
 from schnapsen.bots.rdeep import RdeepBot
+
+from schnapsen.bots import *
 
 
 @click.group()
@@ -147,6 +149,7 @@ def create_replay_memory_dataset() -> None:
 
 @ml.command()
 def train_model() -> None:
+
     # directory where the replay memory is saved
     replay_memory_filename: str = 'random_random_10k_games.txt'
     # filename of replay memory within that directory
@@ -159,14 +162,14 @@ def train_model() -> None:
     model_name: str = 'simple_model'
     model_dir: str = "ML_models"
     model_location = pathlib.Path(model_dir) / model_name
-    overwrite: bool = False
+    overwrite: bool = True
 
     if overwrite and model_location.exists():
         print(f"Model at {model_location} exists already and will be overwritten as selected.")
         model_location.unlink()
 
     train_ML_model(replay_memory_location=replay_memory_location, model_location=model_location,
-                   model_class='LR')
+                   model_class='NN')
 
 
 @ml.command()
@@ -176,7 +179,8 @@ def try_bot_game() -> None:
     model_name: str = 'simple_model'
     model_location = pathlib.Path(model_dir) / model_name
     bot1: Bot = MLPlayingBot(model_location=model_location)
-    bot2: Bot = RandBot(random.Random(464566))
+    bot2: Bot = BullyBot(random.Random(464566))
+    # bot2: Bot = RdeepBot(num_samples=16, depth=4,rand=random.Random(464566))
     number_of_games: int = 10000
     pairs_of_games = number_of_games // 2
 
