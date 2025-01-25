@@ -325,14 +325,6 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
                                   early_stopping=True,
                                   n_iter_no_change=6
 )
-    elif model_class == 'LR':
-        # Train a simpler Linear Logistic Regression model
-        # learn more about the model or how to use better use it by checking out its documentation
-        # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression
-        print("Training a Simple (Linear Logistic Regression) model")
-
-        # Usually there is no reason to change the hyperparameters of such a simple model but fill free to experiment:
-        learner = LogisticRegression(max_iter=1000)
     else:
         raise AssertionError("Unknown model class")
 
@@ -463,6 +455,14 @@ def get_state_feature_vector(perspective: PlayerPerspective) -> list[int]:
 
         Important: This function should not include the move of this agent.
         It should only include any earlier actions of other agents (so the action of the other agent in case that is the leader)
+    """
+    
+    """_summary_
+        the points are needed to be normalized using batch normalization.
+        the sklearn library identified -> implement to each feature.
+
+    Returns:
+        _type_: _description_
     """
     # a list of all the features that consist the state feature set, of type np.ndarray
     state_feature_list: list[int] = []
