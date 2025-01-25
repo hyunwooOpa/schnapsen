@@ -171,22 +171,41 @@ def train_model() -> None:
     train_ML_model(replay_memory_location=replay_memory_location, model_location=model_location,
                    model_class='NN')
 
-
+# bot2: Bot = RdeepBot(num_samples=16, depth=4,rand=random.Random(464566))
 @ml.command()
-def try_bot_game() -> None:
+def try_bot_game(bot) -> None:
     engine = SchnapsenGamePlayEngine()
     model_dir: str = 'ML_models'
     model_name: str = 'simple_model'
     model_location = pathlib.Path(model_dir) / model_name
     bot1: Bot = MLPlayingBot(model_location=model_location)
-    bot2: Bot = BullyBot(random.Random(464566))
+    # bot2: Bot = BullyBot(random.Random(464566))
     # bot2: Bot = RdeepBot(num_samples=16, depth=4,rand=random.Random(464566))
     number_of_games: int = 10000
     pairs_of_games = number_of_games // 2
 
     # play games with altering leader position on first rounds
-    ml_bot_wins_against_random = play_games_and_return_stats(engine=engine, bot1=bot1, bot2=bot2, pairs_of_games=pairs_of_games)
+    ml_bot_wins_against_random = play_games_and_return_stats(engine=engine, bot1=bot1, bot2=bot, pairs_of_games=pairs_of_games)
     print(f"The ML bot with name {model_name}, won {ml_bot_wins_against_random} times out of {number_of_games} games played.")
+
+@ml.command()
+def try_bot_game_with_all_bots() -> None:
+    engine = SchnapsenGamePlayEngine()
+    model_dir: str = 'ML_models'
+    model_name: str = 'simple_model'
+    model_location = pathlib.Path(model_dir) / model_name
+    bot1: Bot = MLPlayingBot(model_location=model_location)
+    bullyBot = BullyBot(random.Random(464566))
+    randBot = RandBot(random.Random(464566))
+    exampleBot = ExampleBot(random.Random(464566))
+    rdeepBot = RdeepBot(num_samples=16, depth=4,rand=random.Random(464566))
+    number_of_games: int = 10000
+    pairs_of_games = number_of_games // 2
+    bots = [bullyBot,randBot,exampleBot,rdeepBot]
+    for bot in bots:
+        ml_bot_wins_against_random = play_games_and_return_stats(engine=engine, bot1=bot1, bot2=bot, pairs_of_games=pairs_of_games)
+        print(f"The ML bot with name {model_name} against {type(bot).__name__}, won {ml_bot_wins_against_random} times out of {number_of_games} games played.")
+
 
 
 @main.command()

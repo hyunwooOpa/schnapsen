@@ -37,8 +37,7 @@ def elu(x):
     return np.maximum(np.exp(x) - 1, x)
 import numpy as np
 
-
-act = tanh_exp_decay #set the current activation function.
+act = inverse_sqrt #set the current activation function.
 
 class CustomMLPClassifier(MLPClassifier):
     """
@@ -301,9 +300,9 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
         # needs a bigger dataset, but if you find the correct combination of neurons and neural layers and provide a big enough training dataset can lead to better performance
 
         # one layer of 30 neurons
-        #hidden_layer_sizes = (30)
+        hidden_layer_sizes = (30)
         # two layers of 30 and 5 neurons respectively
-        hidden_layer_sizes = (30, 5)
+        # hidden_layer_sizes = (30, 5)
 
         # The learning rate determines how fast we move towards the optimal solution.
         # A low learning rate will converge slowly, but a large one might overshoot.
@@ -316,7 +315,7 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
         learner = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, learning_rate_init=learning_rate,
                                 alpha=regularization_strength, verbose=True, early_stopping=True, n_iter_no_change=6,
                                 activation='tanh')
-        clf = CustomMLPClassifier(hidden_layer_sizes=(30, 5),
+        clf = CustomMLPClassifier(hidden_layer_sizes=(30,5),
                                   activation_function=act,
                                   learning_rate='constant',
                                   learning_rate_init=0.0001,
